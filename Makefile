@@ -1,4 +1,15 @@
-.PHONY: all build install uninstall clean help test build-all lint-docs
+.PHONY: all generate build build-launcher build-launcher-frontend \
+	build-whatsapp-native \
+	build-linux-arm build-launcher-linux-arm build-linux-arm-bundle \
+	build-linux-arm64 build-linux-mipsle \
+	build-linux-riscv64 build-launcher-linux-riscv64 build-linux-riscv64-bundle \
+	build-android-arm64 build-launcher-android-arm64 build-android-bundle \
+	build-pi-zero build-all build-macos-app \
+	install uninstall uninstall-all clean \
+	vet test fmt lint lint-docs fix deps update-deps check run \
+	docker-build docker-build-full docker-test \
+	docker-run docker-run-full docker-run-agent docker-run-agent-full docker-clean \
+	mem help
 
 # Build variables
 BINARY_NAME=picoclaw
@@ -261,6 +272,34 @@ build-linux-arm: generate
 	GOOS=linux GOARCH=arm GOARM=7 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm ./$(CMD_DIR)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-linux-arm"
 
+## build-launcher-linux-arm: Build the picoclaw-launcher for Linux ARMv7 (32-bit)
+build-launcher-linux-arm:
+	@echo "Building picoclaw-launcher for linux/arm (GOARM=7)..."
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 $(MAKE) -C web build \
+		OUTPUT="$(CURDIR)/$(BUILD_DIR)/picoclaw-launcher-linux-arm" \
+		WEB_GO='$(GO)' \
+		GO_BUILD_TAGS='$(GO_BUILD_TAGS)' \
+		LDFLAGS='$(LDFLAGS)'
+	@echo "Build complete: $(BUILD_DIR)/picoclaw-launcher-linux-arm"
+
+## build-linux-arm-bundle: Build core and launcher for Linux ARMv7 (32-bit) and package as zip
+build-linux-arm-bundle: generate
+	@echo "Building core for linux/arm (GOARM=7)..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=linux GOARCH=arm GOARM=7 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm ./$(CMD_DIR)
+	@echo "Building launcher for linux/arm..."
+	@$(MAKE) build-launcher-linux-arm
+	@echo "Staging bundle..."
+	@rm -rf $(BUILD_DIR)/linux-arm-staging
+	@mkdir -p $(BUILD_DIR)/linux-arm-staging
+	@cp $(BUILD_DIR)/$(BINARY_NAME)-linux-arm $(BUILD_DIR)/linux-arm-staging/$(BINARY_NAME)
+	@cp $(BUILD_DIR)/picoclaw-launcher-linux-arm $(BUILD_DIR)/linux-arm-staging/picoclaw-launcher
+	@chmod +x $(BUILD_DIR)/linux-arm-staging/$(BINARY_NAME) $(BUILD_DIR)/linux-arm-staging/picoclaw-launcher
+	@cd $(BUILD_DIR)/linux-arm-staging && zip -r ../picoclaw-linux-arm.zip .
+	@rm -rf $(BUILD_DIR)/linux-arm-staging
+	@echo "All linux/arm builds complete: $(BUILD_DIR)/picoclaw-linux-arm.zip"
+
 ## build-linux-arm64: Build for Linux ARM64 (e.g. Raspberry Pi Zero 2 W 64-bit)
 build-linux-arm64: generate
 	@echo "Building for linux/arm64..."
@@ -308,6 +347,41 @@ build-android-bundle: generate
 	@cd $(BUILD_DIR)/android-staging && zip -r ../picoclaw-android-universal.zip .
 	@rm -rf $(BUILD_DIR)/android-staging
 	@echo "All Android builds complete: $(BUILD_DIR)/picoclaw-android-universal.zip"
+
+## build-linux-riscv64: Build the picoclaw core binary for Linux RISC-V 64
+build-linux-riscv64: generate
+	@echo "Building for linux/riscv64..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=linux GOARCH=riscv64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-riscv64 ./$(CMD_DIR)
+	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-linux-riscv64"
+
+## build-launcher-linux-riscv64: Build the picoclaw-launcher for Linux RISC-V 64
+build-launcher-linux-riscv64:
+	@echo "Building picoclaw-launcher for linux/riscv64..."
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=linux GOARCH=riscv64 CGO_ENABLED=0 $(MAKE) -C web build \
+		OUTPUT="$(CURDIR)/$(BUILD_DIR)/picoclaw-launcher-linux-riscv64" \
+		WEB_GO='$(GO)' \
+		GO_BUILD_TAGS='$(GO_BUILD_TAGS)' \
+		LDFLAGS='$(LDFLAGS)'
+	@echo "Build complete: $(BUILD_DIR)/picoclaw-launcher-linux-riscv64"
+
+## build-linux-riscv64-bundle: Build core and launcher for Linux RISC-V 64 and package as zip
+build-linux-riscv64-bundle: generate
+	@echo "Building core for linux/riscv64..."
+	@mkdir -p $(BUILD_DIR)
+	GOOS=linux GOARCH=riscv64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-riscv64 ./$(CMD_DIR)
+	@echo "Building launcher for linux/riscv64..."
+	@$(MAKE) build-launcher-linux-riscv64
+	@echo "Staging bundle..."
+	@rm -rf $(BUILD_DIR)/linux-riscv64-staging
+	@mkdir -p $(BUILD_DIR)/linux-riscv64-staging
+	@cp $(BUILD_DIR)/$(BINARY_NAME)-linux-riscv64 $(BUILD_DIR)/linux-riscv64-staging/$(BINARY_NAME)
+	@cp $(BUILD_DIR)/picoclaw-launcher-linux-riscv64 $(BUILD_DIR)/linux-riscv64-staging/picoclaw-launcher
+	@chmod +x $(BUILD_DIR)/linux-riscv64-staging/$(BINARY_NAME) $(BUILD_DIR)/linux-riscv64-staging/picoclaw-launcher
+	@cd $(BUILD_DIR)/linux-riscv64-staging && zip -r ../picoclaw-linux-riscv64.zip .
+	@rm -rf $(BUILD_DIR)/linux-riscv64-staging
+	@echo "All linux/riscv64 builds complete: $(BUILD_DIR)/picoclaw-linux-riscv64.zip"
 
 ## build-pi-zero: Build for Raspberry Pi Zero 2 W (32-bit and 64-bit)
 build-pi-zero: build-linux-arm build-linux-arm64
