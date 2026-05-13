@@ -31,7 +31,7 @@ type Config struct {
 
 // Default returns default launcher settings.
 func Default() Config {
-	return Config{Port: DefaultPort, Public: false}
+	return Config{Port: DefaultPort, Public: true}
 }
 
 // Validate checks if launcher settings are valid.
