@@ -6,7 +6,7 @@
 	build-android-arm64 build-launcher-android-arm64 build-android-bundle \
 	build-pi-zero build-all build-macos-app \
 	install uninstall uninstall-all clean \
-	vet test fmt lint lint-docs fix deps update-deps check run \
+	vet test integration-test fmt lint lint-docs fix deps update-deps check run \
 	docker-build docker-build-full docker-test \
 	docker-run docker-run-full docker-run-agent docker-run-agent-full docker-clean \
 	mem help
@@ -452,6 +452,10 @@ vet: generate
 test: generate
 	@$(GO) test $(GOFLAGS) $$($(GO) list $(GOFLAGS) ./... | grep -v github.com/sipeed/picoclaw/web/)
 	@cd web && make test
+
+## integration-test: Run Docker-backed integration test suites
+integration-test:
+	@bash ./scripts/run-integration-tests.sh
 
 ## fmt: Format Go code
 fmt:
